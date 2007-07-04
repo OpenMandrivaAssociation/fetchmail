@@ -5,7 +5,7 @@
 
 Name:		fetchmail
 Version:	6.3.8
-Release:	%mkrel 1
+Release:	%mkrel 2
 Group:		Networking/Mail
 BuildRequires:	bison flex gettext-devel openssl-devel
 Summary: 	Full-featured POP/IMAP mail retrieval daemon
@@ -22,7 +22,7 @@ Patch9:		fetchmail-6.3.2-norootwarning.patch
 
 Icon:		fetchmail.gif
 License: 	GPL
-URL: 		http://home.pages.de/~mandree/fetchmail/
+URL: 		http://www.fetchmail.info
 
 %if %{build_current}
 Requires: 	MailTransportAgent
