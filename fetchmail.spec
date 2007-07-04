@@ -14,13 +14,13 @@ Source2:	http://download.berlios.de/fetchmail/%name-%version.tar.bz2.asc
 Source3:	fetchmailconf.desktop.bz2
 Source4:	fetchmail.sysconfig.bz2
 Source5:	fetchmail.bz2
+Source6:	fetchmail.gif
 Patch0:		fetchmail-5.7.0-nlsfix.patch
 Patch4:		fetchmail-6.3.6-verbose.patch
 Patch7:		fetchmail-6.3.4-stripnul.patch
 Patch8:		fetchmail-6.3.6-nonewline.patch
 Patch9:		fetchmail-6.3.2-norootwarning.patch
 
-Icon:		fetchmail.gif
 License: 	GPL
 URL: 		http://www.fetchmail.info
 
