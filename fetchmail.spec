@@ -5,7 +5,7 @@
 
 Name:		fetchmail
 Version:	6.3.8
-Release:	%mkrel 2
+Release:	%mkrel 3
 Group:		Networking/Mail
 BuildRequires:	bison flex gettext-devel openssl-devel
 Summary: 	Full-featured POP/IMAP mail retrieval daemon
@@ -124,24 +124,12 @@ find -name \*.xpm -exec chmod 644 '{}' \;
 
 # Mandrake menu entry
 mkdir -p $RPM_BUILD_ROOT/{%_liconsdir,%_miconsdir,%_menudir}
-cat << EOF >$RPM_BUILD_ROOT%_menudir/%{name}conf
-?package(%{name}conf): command="%{name}conf" \
-icon="other_configuration.png" \
-needs="x11" \
-title="Fetchmailconf" \
-longtitle="Configuration of fetchmail" \
-%if %{mdkversion} >= 200610
-xdg=true \
-%endif
-section="System/Configuration/Other"
-EOF
-
 
 mkdir -p $RPM_BUILD_ROOT%{_datadir}/applications
 cat > $RPM_BUILD_ROOT%{_datadir}/applications/mandriva-%{name}.desktop << EOF
 [Desktop Entry]
 Name=Fetchmailconf
-Comment=%{summary}
+Comment=Full-featured POP/IMAP mail retrieval daemon
 Exec=%{_bindir}/%{name}
 Icon=%{name}
 Terminal=false
@@ -205,7 +193,6 @@ rm -rf $RPM_BUILD_ROOT
 %files -n fetchmailconf
 %defattr(-,root,root)
 %doc README.fetchmail-conf
-%_menudir/fetchmailconf
 %_libdir/rhs/control-panel/*
 %_bindir/fetchmailconf
 %_mandir/man1/fetchmailconf.1*
