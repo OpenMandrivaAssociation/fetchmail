@@ -20,6 +20,7 @@ Patch4:		fetchmail-6.3.6-verbose.patch
 Patch7:		fetchmail-6.3.4-stripnul.patch
 Patch8:		fetchmail-6.3.6-nonewline.patch
 Patch9:		fetchmail-6.3.2-norootwarning.patch
+Patch10:	fetchmail-6.3.6-CVE-2007-4565.patch
 
 License: 	GPL
 URL: 		http://www.fetchmail.info
@@ -88,6 +89,7 @@ SySV init script for demonize fetchmail for sucking emails.
 %patch7 -p1 -b .stripnul
 %patch8 -p1 -b .nonewline
 %patch9 -p0 -b .norootwarn
+%patch10 -p0 -b .CVE-2007-4565
 
 %build
 %serverbuild
