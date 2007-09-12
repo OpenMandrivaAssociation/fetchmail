@@ -5,7 +5,7 @@
 
 Name:		fetchmail
 Version:	6.3.8
-Release:	%mkrel 3
+Release:	%mkrel 4
 Group:		Networking/Mail
 BuildRequires:	bison flex gettext-devel openssl-devel
 Summary: 	Full-featured POP/IMAP mail retrieval daemon
