@@ -124,7 +124,7 @@ rm -rf contrib/RCS
 chmod 644 contrib/*
 find -name \*.xpm -exec chmod 644 '{}' \;
 
-# Mandrake menu entry
+# Mandriva menu entry
 mkdir -p $RPM_BUILD_ROOT/{%_liconsdir,%_miconsdir,%_menudir}
 
 mkdir -p $RPM_BUILD_ROOT%{_datadir}/applications
