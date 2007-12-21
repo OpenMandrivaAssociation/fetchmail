@@ -37,6 +37,7 @@ Requires:	smtpdaemon
 BuildRequires: emacs-bin
 BuildRequires: gettext
 BuildRequires: python
+BuildRoot: 	%_tmppath/%name-%version-buildroot
 
 
 %description
