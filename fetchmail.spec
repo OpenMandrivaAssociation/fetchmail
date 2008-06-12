@@ -170,11 +170,15 @@ EOF
 rm -rf $RPM_BUILD_ROOT
 
 
+%if %mdkversion < 200900
 %post -n fetchmailconf
 %update_menus
+%endif
 
+%if %mdkversion < 200900
 %postun -n fetchmailconf
 %clean_menus
+%endif
 
 %post -n fetchmail-daemon
 %_post_service fetchmail
