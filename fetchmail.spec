@@ -4,8 +4,8 @@
 %define build_7x	0
 
 Name:		fetchmail
-Version:	6.3.8
-Release:	%mkrel 10
+Version:	6.3.9
+Release:	%mkrel 1
 Group:		Networking/Mail
 BuildRequires:	bison flex gettext-devel openssl-devel
 Summary: 	Full-featured POP/IMAP mail retrieval daemon
@@ -88,11 +88,9 @@ SySV init script for demonize fetchmail for sucking emails.
 %setup -q
 %patch0 -p0
 %patch4 -p1
-%patch7 -p1 -b .stripnul
+#%patch7 -p1 -b .stripnul
 %patch8 -p0 -b .nonewline
 %patch9 -p0 -b .norootwarn
-%patch10 -p0 -b .CVE-2007-4565
-%patch11 -p1 -b .cve-2008-2711
 %patch12 -p0 -b .format_not_a_string_literal_and_no_format_arguments
 
 %build
@@ -156,7 +154,7 @@ This utility takes some of the guesswork and hassle out of setting up
 fetchmail.
 EOF
 
-echo 'SySV init script for demonize fetchmail for sucking emails.'>README.fetchmail-daemon 
+echo 'SySV init script for demonize fetchmail for sucking emails.'>README.fetchmail-daemon
 
 # emacs, I use it, I want it
 # yves 5.9.5-2mdk
