@@ -4,7 +4,7 @@
 %define build_7x	0
 
 Name:		fetchmail
-Version:	6.3.9
+Version:	6.3.11
 Release:	%mkrel 1
 Group:		Networking/Mail
 BuildRequires:	bison flex gettext-devel openssl-devel
@@ -16,13 +16,7 @@ Source4:	fetchmail.sysconfig.bz2
 Source5:	fetchmail.bz2
 Source6:	fetchmail.gif
 Patch0:		fetchmail-5.7.0-nlsfix.patch
-Patch4:		fetchmail-6.3.6-verbose.patch
-Patch7:		fetchmail-6.3.4-stripnul.patch
-Patch8:		fetchmail-6.3.6-nonewline.patch
 Patch9:		fetchmail-6.3.2-norootwarning.patch
-Patch10:	fetchmail-6.3.6-CVE-2007-4565.patch
-Patch11:	fetchmail-6.3.8-suse-CVE-2008-2711.patch
-Patch12:	fetchmail-6.3.8-format_not_a_string_literal_and_no_format_arguments.diff
 
 License: 	GPL
 URL: 		http://www.fetchmail.info
@@ -87,11 +81,7 @@ SySV init script for demonize fetchmail for sucking emails.
 %prep
 %setup -q
 %patch0 -p0
-%patch4 -p1
-#%patch7 -p1 -b .stripnul
-%patch8 -p0 -b .nonewline
 %patch9 -p0 -b .norootwarn
-%patch12 -p0 -b .format_not_a_string_literal_and_no_format_arguments
 
 %build
 %serverbuild
