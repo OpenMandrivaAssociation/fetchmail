@@ -4,8 +4,8 @@
 %define build_7x	0
 
 Name:		fetchmail
-Version:	6.3.11
-Release:	%mkrel 2
+Version:	6.3.12
+Release:	%mkrel 1
 Group:		Networking/Mail
 BuildRequires:	bison flex gettext-devel openssl-devel
 Summary: 	Full-featured POP/IMAP mail retrieval daemon
@@ -16,7 +16,6 @@ Source4:	fetchmail.sysconfig.bz2
 Source5:	fetchmail.bz2
 Source6:	fetchmail.gif
 Patch0:		fetchmail-5.7.0-nlsfix.patch
-Patch1:		fetchmail-6.3.11-fix-ssl.patch
 Patch9:		fetchmail-6.3.2-norootwarning.patch
 
 License: 	GPL
@@ -82,7 +81,6 @@ SySV init script for demonize fetchmail for sucking emails.
 %prep
 %setup -q
 %patch0 -p0
-%patch1 -p0 -b .ssl
 %patch9 -p0 -b .norootwarn
 
 %build
