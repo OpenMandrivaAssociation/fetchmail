@@ -4,7 +4,7 @@
 %define build_7x	0
 
 Name:		fetchmail
-Version:	6.3.12
+Version:	6.3.13
 Release:	%mkrel 1
 Group:		Networking/Mail
 BuildRequires:	bison flex gettext-devel openssl-devel
