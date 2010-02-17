@@ -5,7 +5,7 @@
 
 Name:		fetchmail
 Version:	6.3.14
-Release:	%mkrel 1
+Release:	%mkrel 2
 Group:		Networking/Mail
 BuildRequires:	bison flex gettext-devel openssl-devel
 Summary: 	Full-featured POP/IMAP mail retrieval daemon
@@ -13,7 +13,7 @@ Source:		http://download.berlios.de/fetchmail/%name-%version.tar.bz2
 Source2:	http://download.berlios.de/fetchmail/%name-%version.tar.bz2.asc
 Source3:	fetchmailconf.desktop.bz2
 Source4:	fetchmail.sysconfig.bz2
-Source5:	fetchmail.bz2
+Source5:	fetchmail.init
 Source6:	fetchmail.gif
 Patch0:		fetchmail-5.7.0-nlsfix.patch
 Patch9:		fetchmail-6.3.2-norootwarning.patch
@@ -108,7 +108,7 @@ install rh-config/*.{xpm,init} $RPM_BUILD_ROOT%_libdir/rhs/control-panel
 bzcat %SOURCE3 > $RPM_BUILD_ROOT%_datadir/applets/Administration/fetchmailconf.desktop
 %endif
 bzcat %SOURCE4 > $RPM_BUILD_ROOT%_sysconfdir/sysconfig/fetchmail
-bzcat %SOURCE5 > $RPM_BUILD_ROOT%_initrddir/fetchmail
+install -m0755 %SOURCE5 $RPM_BUILD_ROOT%_initrddir/fetchmail
 
 echo -e "# Put here each user config\n" > $RPM_BUILD_ROOT/etc/fetchmailrc
 
@@ -177,6 +177,12 @@ rm -rf $RPM_BUILD_ROOT
 
 %preun -n fetchmail-daemon
 %_preun_service fetchmail
+
+%post -n fetchmail-daemon
+/sbin/service fetchmail condrestart > /dev/null 2>/dev/null || :
+
+%postun -n fetchmail-daemon
+/sbin/service fetchmail condrestart > /dev/null 2>/dev/null || :
 
 %files -f %name.lang
 %defattr (-, root, root)
