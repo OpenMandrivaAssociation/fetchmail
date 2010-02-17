@@ -178,11 +178,10 @@ rm -rf $RPM_BUILD_ROOT
 %preun -n fetchmail-daemon
 %_preun_service fetchmail
 
-%post -n fetchmail-daemon
-/sbin/service fetchmail condrestart > /dev/null 2>/dev/null || :
-
 %postun -n fetchmail-daemon
-/sbin/service fetchmail condrestart > /dev/null 2>/dev/null || :
+if [ "$1" -ge "1" ]; then
+    /sbin/service fetchmail condrestart > /dev/null 2>/dev/null || :
+fi
 
 %files -f %name.lang
 %defattr (-, root, root)
