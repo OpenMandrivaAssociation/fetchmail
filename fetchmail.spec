@@ -1,14 +1,10 @@
-# current = mdv2007.0
-%define build_current	1
-%define build_80	0
-%define build_7x	0
-
+Summary: 	Full-featured POP/IMAP mail retrieval daemon
 Name:		fetchmail
 Version:	6.3.14
-Release:	%mkrel 4
+Release:	%mkrel 2
+License: 	GPL
 Group:		Networking/Mail
-BuildRequires:	bison flex gettext-devel openssl-devel
-Summary: 	Full-featured POP/IMAP mail retrieval daemon
+URL: 		http://www.fetchmail.info
 Source:		http://download.berlios.de/fetchmail/%name-%version.tar.bz2
 Source2:	http://download.berlios.de/fetchmail/%name-%version.tar.bz2.asc
 Source3:	fetchmailconf.desktop.bz2
@@ -17,24 +13,14 @@ Source5:	fetchmail.init
 Source6:	fetchmail.gif
 Patch0:		fetchmail-5.7.0-nlsfix.patch
 Patch9:		fetchmail-6.3.2-norootwarning.patch
-
-License: 	GPL
-URL: 		http://www.fetchmail.info
-
-%if %{build_current}
+BuildRequires:	bison
+BuildRequires:	flex
+BuildRequires:	gettext
+BuildRequires:	gettext-devel
+BuildRequires:	openssl-devel
+BuildRequires:	python
 Requires: 	MailTransportAgent
-%endif
-%if %{build_80}
-Requires:	MailTransportAgent smtpdaemon
-%endif
-%if %{build_7x}
-Requires:	smtpdaemon
-%endif
-BuildRequires: emacs-bin
-BuildRequires: gettext
-BuildRequires: python
-BuildRoot: 	%_tmppath/%name-%version-buildroot
-
+BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-buildroot
 
 %description
 Fetchmail is a free, full-featured, robust, and well-documented remote mail
@@ -146,18 +132,6 @@ EOF
 
 echo 'SySV init script for demonize fetchmail for sucking emails.'>README.fetchmail-daemon
 
-# emacs, I use it, I want it
-# yves 5.9.5-2mdk
-mkdir -p $RPM_BUILD_ROOT%_datadir/emacs/site-lisp
-install -m 644 contrib/fetchmail-mode.el $RPM_BUILD_ROOT%_datadir/emacs/site-lisp
-emacs -batch -f batch-byte-compile $RPM_BUILD_ROOT%_datadir/emacs/site-lisp/fetchmail-mode.el
-
-install -d $RPM_BUILD_ROOT%_sysconfdir/emacs/site-start.d
-cat <<EOF >$RPM_BUILD_ROOT%_sysconfdir/emacs/site-start.d/%name.el
-(setq auto-mode-alist (append '(("\..fetchmailrc$" . fetchmail-mode)) auto-mode-alist))
-(autoload 'fetchmail-mode "fetchmail-mode.el" "Mode for editing .fetchmailrc files" t)
-EOF
-
 %clean
 rm -rf $RPM_BUILD_ROOT
 
@@ -188,10 +162,7 @@ fi
 %doc COPYING FAQ FEATURES INSTALL NEWS NOTES README
 %doc contrib fetchmail-features.html fetchmail-FAQ.html design-notes.html
 %_bindir/fetchmail
-%_datadir/emacs/site-lisp/fetchmail-mode.el
-%config(noreplace) %_sysconfdir/emacs/site-start.d/%name.el
 %_mandir/man1/fetchmail.1*
-%_datadir/emacs/site-lisp/fetchmail-mode.elc
 
 %files -n fetchmailconf
 %defattr(-,root,root)
@@ -213,5 +184,3 @@ fi
 %attr(600,root,root) %config(noreplace,missingok) %_sysconfdir/fetchmailrc
 %config(noreplace) %{_sysconfdir}/sysconfig/fetchmail
 %attr(755,root,root) %config(noreplace) %_initrddir/fetchmail
-
-
