@@ -82,31 +82,31 @@ export CFLAGS="$CFLAGS -g"
 make all
 
 %install
-rm -fr $RPM_BUILD_ROOT
-mkdir -p $RPM_BUILD_ROOT{%_libdir/rhs/control-panel,%_datadir/applets/Administration} \
-	$RPM_BUILD_ROOT{%_sysconfdir/{X11/wmconfig,sysconfig},%_mandir/man1,%_initrddir}
+rm -fr %{buildroot}
+mkdir -p %{buildroot}{%_libdir/rhs/control-panel,%_datadir/applets/Administration} \
+	%{buildroot}{%_sysconfdir/{X11/wmconfig,sysconfig},%_mandir/man1,%_initrddir}
 
 %makeinstall
 
-install rh-config/*.{xpm,init} $RPM_BUILD_ROOT%_libdir/rhs/control-panel
+install rh-config/*.{xpm,init} %{buildroot}%_libdir/rhs/control-panel
 
 %if %{mdkversion} < 200610
-bzcat %SOURCE3 > $RPM_BUILD_ROOT%_datadir/applets/Administration/fetchmailconf.desktop
+bzcat %SOURCE3 > %{buildroot}%_datadir/applets/Administration/fetchmailconf.desktop
 %endif
-bzcat %SOURCE4 > $RPM_BUILD_ROOT%_sysconfdir/sysconfig/fetchmail
-install -m0755 %SOURCE5 $RPM_BUILD_ROOT%_initrddir/fetchmail
+bzcat %SOURCE4 > %{buildroot}%_sysconfdir/sysconfig/fetchmail
+install -m0755 %SOURCE5 %{buildroot}%_initrddir/fetchmail
 
-echo -e "# Put here each user config\n" > $RPM_BUILD_ROOT/etc/fetchmailrc
+echo -e "# Put here each user config\n" > %{buildroot}/etc/fetchmailrc
 
 rm -rf contrib/RCS
 chmod 644 contrib/*
 find -name \*.xpm -exec chmod 644 '{}' \;
 
 # Mandriva menu entry
-mkdir -p $RPM_BUILD_ROOT/{%_liconsdir,%_miconsdir,%_menudir}
+mkdir -p %{buildroot}/{%_liconsdir,%_miconsdir,%_menudir}
 
-mkdir -p $RPM_BUILD_ROOT%{_datadir}/applications
-cat > $RPM_BUILD_ROOT%{_datadir}/applications/mandriva-%{name}.desktop << EOF
+mkdir -p %{buildroot}%{_datadir}/applications
+cat > %{buildroot}%{_datadir}/applications/mandriva-%{name}.desktop << EOF
 [Desktop Entry]
 Name=Fetchmailconf
 Comment=Full-featured POP/IMAP mail retrieval daemon
@@ -133,7 +133,7 @@ EOF
 echo 'SySV init script for demonize fetchmail for sucking emails.'>README.fetchmail-daemon
 
 %clean
-rm -rf $RPM_BUILD_ROOT
+rm -rf %{buildroot}
 
 
 %if %mdkversion < 200900
