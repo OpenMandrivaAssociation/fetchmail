@@ -1,12 +1,12 @@
 Summary: 	Full-featured POP/IMAP mail retrieval daemon
 Name:		fetchmail
-Version:	6.3.21
-Release:	%mkrel 1
-License: 	GPL
+Version:	6.3.22
+Release:	1
+License: 	GPLv2
 Group:		Networking/Mail
 URL: 		http://www.fetchmail.info
-Source:		http://download.berlios.de/fetchmail/%name-%version.tar.bz2
-Source2:	http://download.berlios.de/fetchmail/%name-%version.tar.bz2.asc
+Source0:	http://download.berlios.de/fetchmail/%name-%version.tar.xz
+Source2:	http://download.berlios.de/fetchmail/%name-%version.tar.xz.asc
 Source3:	fetchmailconf.desktop.bz2
 Source4:	fetchmail.sysconfig.bz2
 Source5:	fetchmail.init
@@ -20,7 +20,6 @@ BuildRequires:	gettext-devel
 BuildRequires:	openssl-devel
 BuildRequires:	python
 Requires: 	MailTransportAgent
-BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-buildroot
 
 %description
 Fetchmail is a free, full-featured, robust, and well-documented remote mail
@@ -131,20 +130,6 @@ fetchmail.
 EOF
 
 echo 'SySV init script for demonize fetchmail for sucking emails.'>README.fetchmail-daemon
-
-%clean
-rm -rf %{buildroot}
-
-
-%if %mdkversion < 200900
-%post -n fetchmailconf
-%update_menus
-%endif
-
-%if %mdkversion < 200900
-%postun -n fetchmailconf
-%clean_menus
-%endif
 
 %post -n fetchmail-daemon
 %_post_service fetchmail
