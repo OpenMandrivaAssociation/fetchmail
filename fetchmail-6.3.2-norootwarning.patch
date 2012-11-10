@@ -1,0 +1,13 @@
+--- fetchmail.c	2006/03/23 08:45:23	1.1
++++ fetchmail.c	2006/03/23 08:45:27
+@@ -165,10 +165,6 @@
+     iana_charset = "US-ASCII";
+ #endif
+ 
+-    if (getuid() == 0) {
+-	report(stderr, GT_("WARNING: Running as root is discouraged.\n"));
+-    }
+-
+     /*
+      * Note: because we can't initialize reporting before we  know whether
+      * syslog is supposed to be on, this message will go to stdout and
