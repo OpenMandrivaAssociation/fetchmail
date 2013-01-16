@@ -1,7 +1,3 @@
+---
 sources:
-  "fetchmail-6.3.22.tar.xz:"	3bb755010dbe568d53840e22d8e87d8d5db25b19
-  "fetchmail-6.3.22.tar.xz.asc:"	27184b75ef09c5202bede9863ae8abc3d0cdb1d2
-  "fetchmailconf.desktop.bz2:"	9dc041f5c96f5f337426ecad38128fa4864ac168
-  "fetchmail.gif:"	fb82ea6b2e59c6119ef63cea734d88829654939d
-  "fetchmail.init:"	f241670fd4ea91ad8f0312eb3133efb4d3d78c54
-  "fetchmail.sysconfig.bz2:"	1c6352cc68a64a336b8fe9e616cb4adcc9123164
+  fetchmail-6.3.22.tar.xz: 3bb755010dbe568d53840e22d8e87d8d5db25b19
