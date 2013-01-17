@@ -1,14 +1,13 @@
 Summary: 	Full-featured POP/IMAP mail retrieval daemon
 Name:		fetchmail
 Version:	6.3.22
-Release:	1
+Release:	2
 License: 	GPLv2
 Group:		Networking/Mail
 URL: 		http://www.fetchmail.info
-Source0:	http://download.berlios.de/fetchmail/%name-%version.tar.xz
-Source2:	http://download.berlios.de/fetchmail/%name-%version.tar.xz.asc
-Source3:	fetchmailconf.desktop.bz2
-Source4:	fetchmail.sysconfig.bz2
+Source0:	http://download.berlios.de/fetchmail/%{name}-%{version}.tar.xz
+Source2:	http://download.berlios.de/fetchmail/%{name}-%{version}.tar.xz.asc
+Source4:	fetchmail.sysconfig
 Source5:	fetchmail.init
 Source6:	fetchmail.gif
 Patch0:		fetchmail-5.7.0-nlsfix.patch
@@ -41,7 +40,7 @@ read it through your normal mail client.
 Summary: 	A utility for graphically configuring your fetchmail preferences
 Group: 		System/Configuration/Networking
 Requires: 	tkinter
-Requires: 	%name = %version
+Requires: 	%{name} = %{version}
 
 
 %description -n fetchmailconf
@@ -56,7 +55,7 @@ fetchmail.
 %package daemon
 Summary:	SySV init script for demonize fetchmail for retrieving emails
 Group:		System/Base
-Requires:	%name = %version
+Requires:	%{name} = %{version}
 Requires(preun): rpm-helper
 Requires(post): rpm-helper
 
@@ -81,19 +80,15 @@ export CFLAGS="$CFLAGS -g"
 make all
 
 %install
-rm -fr %{buildroot}
-mkdir -p %{buildroot}{%_libdir/rhs/control-panel,%_datadir/applets/Administration} \
-	%{buildroot}{%_sysconfdir/{X11/wmconfig,sysconfig},%_mandir/man1,%_initrddir}
+mkdir -p %{buildroot}{%{_libdir}/rhs/control-panel,%{_datadir}/applets/Administration} \
+	%{buildroot}{%{_sysconfdir}/{X11/wmconfig,sysconfig},%{_mandir}/man1,%{_initrddir}}
 
 %makeinstall
 
-install rh-config/*.{xpm,init} %{buildroot}%_libdir/rhs/control-panel
+install rh-config/*.{xpm,init} %{buildroot}%{_libdir}/rhs/control-panel
 
-%if %{mdkversion} < 200610
-bzcat %SOURCE3 > %{buildroot}%_datadir/applets/Administration/fetchmailconf.desktop
-%endif
-bzcat %SOURCE4 > %{buildroot}%_sysconfdir/sysconfig/fetchmail
-install -m0755 %SOURCE5 %{buildroot}%_initrddir/fetchmail
+install -Dm 0644 %{SOURCE4} %{buildroot}%{_sysconfdir}/sysconfig/fetchmail
+install -m0755 %SOURCE5 %{buildroot}%{_initrddir}/fetchmail
 
 echo -e "# Put here each user config\n" > %{buildroot}/etc/fetchmailrc
 
@@ -131,40 +126,32 @@ EOF
 
 echo 'SySV init script for demonize fetchmail for sucking emails.'>README.fetchmail-daemon
 
-%post -n fetchmail-daemon
+%post daemon
 %_post_service fetchmail
 
-%preun -n fetchmail-daemon
+%preun daemon
 %_preun_service fetchmail
 
-%postun -n fetchmail-daemon
+%postun daemon
 if [ "$1" -ge "1" ]; then
     /sbin/service fetchmail condrestart > /dev/null 2>/dev/null || :
 fi
 
 %files -f %name.lang
-%defattr (-, root, root)
 %doc COPYING FAQ FEATURES INSTALL NEWS NOTES README
 %doc contrib fetchmail-features.html fetchmail-FAQ.html design-notes.html
 %_bindir/fetchmail
 %_mandir/man1/fetchmail.1*
 
 %files -n fetchmailconf
-%defattr(-,root,root)
 %doc README.fetchmail-conf
-%_libdir/rhs/control-panel/*
-%_bindir/fetchmailconf
-%_mandir/man1/fetchmailconf.1*
-%if %{mdkversion} < 200610
-%_datadir/applets/Administration/fetchmailconf.desktop
-%_libdir/python*/site-packages/*
-%else
+%{_libdir}/rhs/control-panel/*
+%{_bindir}/fetchmailconf
+%{_mandir}/man1/fetchmailconf.1*
 %{_datadir}/applications/
-%py_purelibdir/site-packages/*
-%endif
+%{py_purelibdir}/site-packages/*
 
 %files daemon
-%defattr(-,root,root)
 %doc README.fetchmail-daemon
 %attr(600,root,root) %config(noreplace,missingok) %_sysconfdir/fetchmailrc
 %config(noreplace) %{_sysconfdir}/sysconfig/fetchmail
