@@ -4,7 +4,7 @@ Version:	6.3.22
 Release:	2
 License: 	GPLv2
 Group:		Networking/Mail
-URL: 		http://www.fetchmail.info
+Url: 		http://www.fetchmail.info
 Source0:	http://download.berlios.de/fetchmail/%{name}-%{version}.tar.xz
 Source2:	http://download.berlios.de/fetchmail/%{name}-%{version}.tar.xz.asc
 Source4:	fetchmail.sysconfig
@@ -12,12 +12,12 @@ Source5:	fetchmail.init
 Source6:	fetchmail.gif
 Patch0:		fetchmail-5.7.0-nlsfix.patch
 Patch9:		fetchmail-6.3.2-norootwarning.patch
+
 BuildRequires:	bison
 BuildRequires:	flex
-BuildRequires:	gettext
-BuildRequires:	gettext-devel
-BuildRequires:	openssl-devel
 BuildRequires:	python
+BuildRequires:	gettext-devel
+BuildRequires:	pkgconfig(openssl)
 Requires: 	MailTransportAgent
 
 %description
@@ -41,7 +41,6 @@ Summary: 	A utility for graphically configuring your fetchmail preferences
 Group: 		System/Configuration/Networking
 Requires: 	tkinter
 Requires: 	%{name} = %{version}
-
 
 %description -n fetchmailconf
 Fetchmailconf is a TCL/TK application for graphically configuring
@@ -111,7 +110,7 @@ Type=Application
 Categories=X-MandrivaLinux-System-Configuration-Other;Settings;
 EOF
 
-%find_lang %name
+%find_lang %{name}
 
 cat > README.fetchmail-conf <<EOF
 Fetchmailconf is a TCL/TK application for graphically configuring your
@@ -134,14 +133,14 @@ echo 'SySV init script for demonize fetchmail for sucking emails.'>README.fetchm
 
 %postun daemon
 if [ "$1" -ge "1" ]; then
-    /sbin/service fetchmail condrestart > /dev/null 2>/dev/null || :
+	/sbin/service fetchmail condrestart > /dev/null 2>/dev/null || :
 fi
 
-%files -f %name.lang
+%files -f %{name}.lang
 %doc COPYING FAQ FEATURES INSTALL NEWS NOTES README
 %doc contrib fetchmail-features.html fetchmail-FAQ.html design-notes.html
-%_bindir/fetchmail
-%_mandir/man1/fetchmail.1*
+%{_bindir}/fetchmail
+%{_mandir}/man1/fetchmail.1*
 
 %files -n fetchmailconf
 %doc README.fetchmail-conf
@@ -153,6 +152,7 @@ fi
 
 %files daemon
 %doc README.fetchmail-daemon
-%attr(600,root,root) %config(noreplace,missingok) %_sysconfdir/fetchmailrc
+%attr(600,root,root) %config(noreplace,missingok) %{_sysconfdir}/fetchmailrc
 %config(noreplace) %{_sysconfdir}/sysconfig/fetchmail
-%attr(755,root,root) %config(noreplace) %_initrddir/fetchmail
+%attr(755,root,root) %config(noreplace) %{_initrddir}/fetchmail
+
