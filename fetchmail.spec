@@ -1,7 +1,7 @@
 Summary: 	Full-featured POP/IMAP mail retrieval daemon
 Name:		fetchmail
 Version:	6.3.22
-Release:	8
+Release:	9
 License: 	GPLv2
 Group:		Networking/Mail
 Url: 		http://www.fetchmail.info
