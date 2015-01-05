@@ -1,7 +1,7 @@
 Summary: 	Full-featured POP/IMAP mail retrieval daemon
 Name:		fetchmail
 Version:	6.3.22
-Release:	9
+Release:	10
 License: 	GPLv2
 Group:		Networking/Mail
 Url: 		http://www.fetchmail.info
@@ -148,7 +148,7 @@ fi
 %{_bindir}/fetchmailconf
 %{_mandir}/man1/fetchmailconf.1*
 %{_datadir}/applications/
-%{py_purelibdir}/site-packages/*
+%{py_puresitedir}/fetchmailconf.py
 
 %files daemon
 %doc README.fetchmail-daemon
