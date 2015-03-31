@@ -1,12 +1,12 @@
 Summary: 	Full-featured POP/IMAP mail retrieval daemon
 Name:		fetchmail
-Version:	6.3.22
-Release:	10
+Version:	6.3.26
+Release:	1
 License: 	GPLv2
 Group:		Networking/Mail
 Url: 		http://www.fetchmail.info
-Source0:	http://download.berlios.de/fetchmail/%{name}-%{version}.tar.xz
-Source2:	http://download.berlios.de/fetchmail/%{name}-%{version}.tar.xz.asc
+Source0:	http://sourceforge.net/projects/fetchmail/files/branch_6.3/%{name}-%{version}.tar.xz
+Source2:	http://sourceforge.net/projects/fetchmail/files/branch_6.3/%{name}-%{version}.tar.xz.asc
 Source4:	fetchmail.sysconfig
 Source5:	fetchmail.init
 Source6:	fetchmail.gif
