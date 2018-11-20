@@ -1,158 +1,70 @@
-Summary: 	Full-featured POP/IMAP mail retrieval daemon
-Name:		fetchmail
-Version:	6.3.26
-Release:	4
-License: 	GPLv2
-Group:		Networking/Mail
-Url: 		http://www.fetchmail.info
-Source0:	http://sourceforge.net/projects/fetchmail/files/branch_6.3/%{name}-%{version}.tar.xz
-Source2:	http://sourceforge.net/projects/fetchmail/files/branch_6.3/%{name}-%{version}.tar.xz.asc
-Source4:	fetchmail.sysconfig
-Source5:	fetchmail.init
-Source6:	fetchmail.gif
-Patch0:		fetchmail-5.7.0-nlsfix.patch
-Patch9:		fetchmail-6.3.2-norootwarning.patch
-
-BuildRequires:	bison
-BuildRequires:	flex
-BuildRequires:	python
-BuildRequires:	gettext-devel
-BuildRequires:	pkgconfig(openssl)
-Requires: 	MailTransportAgent
+Summary: A remote mail retrieval and forwarding utility
+Name: fetchmail
+Version: 6.3.26
+Release: 23%{?dist}
+Source0: http://downloads.sourceforge.net/%{name}/%{name}-%{version}.tar.xz
+Source1: http://downloads.sourceforge.net/%{name}/%{name}-%{version}.tar.xz.asc
+# systemd service file
+Source2: fetchmail.service
+# example configuration file
+Source3: fetchmailrc.example
+# Improves SSL related options
+Patch0: fetchmail-6.3.26-ssl-backport.patch
+# Minor fixes of inacurracies in options, usage message and man page (accepted upstream)
+Patch1: fetchmail-6.3.26-options-usage-manpage.patch
+Patch2: fetchmail-6.3.24-sslv3-in-ssllib-check.patch
+# Set SNI, see bz#1611815 (backported from upstream)
+Patch3: fetchmail-6.3.26-ssl-set-sni.patch
+URL: http://www.fetchmail.info/
+# For a breakdown of the licensing, see COPYING
+License: GPL+ and Public Domain
+BuildRequires: gcc gettext-devel krb5-devel openssl-devel systemd
 
 %description
-Fetchmail is a free, full-featured, robust, and well-documented remote mail
-retrieval and forwarding utility intended to be used over on-demand TCP/IP
-links (such as SLIP or PPP connections).
-
-It retrieves mail from remote mail servers and forwards it to your local
-(client) machine's delivery system, so it can then be read by normal
-mail user agents such as Mutt, Elm, Pine, (X)Emacs/Gnus or Mailx.
-
-It comes with an interactive GUI configurator suitable for end-users.
-
+Fetchmail is a remote mail retrieval and forwarding utility intended
+for use over on-demand TCP/IP links, like SLIP or PPP connections.
 Fetchmail supports every remote-mail protocol currently in use on the
-Internet (POP2, POP3, RPOP, APOP, KPOP, all IMAPs, ESMTP ETRN) for
-retrieval.  Then Fetchmail forwards the mail through SMTP, so you can
-read it through your normal mail client.
+Internet (POP2, POP3, RPOP, APOP, KPOP, all IMAPs, ESMTP ETRN, IPv6,
+and IPSEC) for retrieval. Then Fetchmail forwards the mail through
+SMTP so you can read it through your favorite mail client.
 
-%package -n fetchmailconf
-Summary: 	A utility for graphically configuring your fetchmail preferences
-Group: 		System/Configuration/Networking
-Requires: 	tkinter
-Requires: 	%{name} = %{version}
-
-%description -n fetchmailconf
-Fetchmailconf is a TCL/TK application for graphically configuring
-your ~/.fetchmailrc preferences file.
-
-Fetchmail has many options which can be daunting to the new user.
-
-This utility takes some of the guesswork and hassle out of setting up
-fetchmail.
-
-%package daemon
-Summary:	SySV init script for demonize fetchmail for retrieving emails
-Group:		System/Base
-Requires:	%{name} = %{version}
-Requires(preun): rpm-helper
-Requires(post): rpm-helper
-
-%description daemon
-SySV init script for demonize fetchmail for sucking emails.
+Install fetchmail if you need to retrieve mail over SLIP or PPP
+connections.
 
 %prep
 %setup -q
-%patch0 -p0
-%patch9 -p0 -b .norootwarn
+%patch0 -p1 -b .ssl-backport
+%patch1 -p1 -b .options-usage-manpage
+%patch2 -p1 -b .sslv3-in-ssllib-check
+%patch3 -p1 -b .ssl-set-sni
 
 %build
-%serverbuild
-export CFLAGS="$CFLAGS -g"
-%configure2_5x  \
-	--with-ssl=%_prefix	\
-	--enable-RPA		\
-	--enable-NTLM		\
-	--enable-SDPS
-
-# (tv) do not use %%make in order to workaround buggy parallel build:
-make all
+%configure --enable-POP3 --enable-IMAP --with-ssl --without-hesiod \
+	--enable-ETRN --enable-NTLM --enable-SDPS --enable-RPA \
+	--enable-nls --with-kerberos5 --with-gssapi \
+	--enable-fallback=no
+make
 
 %install
-mkdir -p %{buildroot}{%{_libdir}/rhs/control-panel,%{_datadir}/applets/Administration} \
-	%{buildroot}{%{_sysconfdir}/{X11/wmconfig,sysconfig},%{_mandir}/man1,%{_initrddir}}
+make install DESTDIR=$RPM_BUILD_ROOT
 
-%makeinstall
+# install example systemd unit
+mkdir -p $RPM_BUILD_ROOT%{_unitdir}
+install -p -m 644 %{SOURCE2} $RPM_BUILD_ROOT%{_unitdir}/fetchmail.service
 
-install rh-config/*.{xpm,init} %{buildroot}%{_libdir}/rhs/control-panel
+# install example config file
+mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}
+install -p -m 600 %{SOURCE3} $RPM_BUILD_ROOT%{_sysconfdir}/fetchmailrc.example
 
-install -Dm 0644 %{SOURCE4} %{buildroot}%{_sysconfdir}/sysconfig/fetchmail
-install -m0755 %SOURCE5 %{buildroot}%{_initrddir}/fetchmail
+# remove fetchmailconf stuff
+rm -f $RPM_BUILD_ROOT%{_bindir}/fetchmailconf*
+rm -f $RPM_BUILD_ROOT%{_mandir}/man1/fetchmailconf.1*
 
-echo -e "# Put here each user config\n" > %{buildroot}/etc/fetchmailrc
-
-rm -rf contrib/RCS
-chmod 644 contrib/*
-find -name \*.xpm -exec chmod 644 '{}' \;
-
-# Mandriva menu entry
-mkdir -p %{buildroot}/{%_liconsdir,%_miconsdir,%_menudir}
-
-mkdir -p %{buildroot}%{_datadir}/applications
-cat > %{buildroot}%{_datadir}/applications/mandriva-%{name}.desktop << EOF
-[Desktop Entry]
-Name=Fetchmailconf
-Comment=Full-featured POP/IMAP mail retrieval daemon
-Exec=%{_bindir}/%{name}
-Icon=%{name}
-Terminal=false
-Type=Application
-Categories=X-MandrivaLinux-System-Configuration-Other;Settings;
-EOF
-
-%find_lang %{name}
-
-cat > README.fetchmail-conf <<EOF
-Fetchmailconf is a TCL/TK application for graphically configuring your
-~/.fetchmailrc preferences file.
-
-Fetchmail has many options which can be daunting to the new user.
-
-
-This utility takes some of the guesswork and hassle out of setting up
-fetchmail.
-EOF
-
-echo 'SySV init script for demonize fetchmail for sucking emails.'>README.fetchmail-daemon
-
-%post daemon
-%_post_service fetchmail
-
-%preun daemon
-%_preun_service fetchmail
-
-%postun daemon
-if [ "$1" -ge "1" ]; then
-	/sbin/service fetchmail condrestart > /dev/null 2>/dev/null || :
-fi
+%find_lang %name
 
 %files -f %{name}.lang
-%doc COPYING FAQ FEATURES INSTALL NEWS NOTES README
-%doc contrib fetchmail-features.html fetchmail-FAQ.html design-notes.html
+%doc COPYING FAQ FEATURES NEWS NOTES README README.SSL TODO
 %{_bindir}/fetchmail
 %{_mandir}/man1/fetchmail.1*
-
-%files -n fetchmailconf
-%doc README.fetchmail-conf
-%{_libdir}/rhs/control-panel/*
-%{_bindir}/fetchmailconf
-%{_mandir}/man1/fetchmailconf.1*
-%{_datadir}/applications/
-%{py_puresitedir}/fetchmailconf.py
-
-%files daemon
-%doc README.fetchmail-daemon
-%attr(600,root,root) %config(noreplace,missingok) %{_sysconfdir}/fetchmailrc
-%config(noreplace) %{_sysconfdir}/sysconfig/fetchmail
-%attr(755,root,root) %config(noreplace) %{_initrddir}/fetchmail
-
+%{_unitdir}/fetchmail.service
+%config(noreplace) %attr(0600, mail, mail) %{_sysconfdir}/fetchmailrc.example

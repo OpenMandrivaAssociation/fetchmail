@@ -1,0 +1,742 @@
+diff -up fetchmail-6.3.26/configure.ac.orig fetchmail-6.3.26/configure.ac
+--- fetchmail-6.3.26/configure.ac.orig	2013-04-23 22:51:10.000000000 +0200
++++ fetchmail-6.3.26/configure.ac	2016-05-02 14:14:34.908139601 +0200
+@@ -803,6 +803,7 @@ fi
+ 
+ case "$LIBS" in *-lssl*)
+ 	AC_CHECK_DECLS([SSLv2_client_method],,,[#include <openssl/ssl.h>])
++	AC_CHECK_DECLS([SSLv3_client_method],,,[#include <openssl/ssl.h>])
+ 	;;
+ esac
+ 
+diff -up fetchmail-6.3.26/fetchmail.c.orig fetchmail-6.3.26/fetchmail.c
+--- fetchmail-6.3.26/fetchmail.c.orig	2013-04-23 22:00:45.000000000 +0200
++++ fetchmail-6.3.26/fetchmail.c	2016-05-02 14:14:34.908139601 +0200
+@@ -263,6 +263,12 @@ int main(int argc, char **argv)
+ #ifdef SSL_ENABLE
+ 	"+SSL"
+ #endif
++#if HAVE_DECL_SSLV2_CLIENT_METHOD + 0 == 0
++ 	"-SSLv2"
++#endif
++#if HAVE_DECL_SSLV3_CLIENT_METHOD + 0 == 0
++ 	"-SSLv3"
++#endif
+ #ifdef OPIE_ENABLE
+ 	"+OPIE"
+ #endif /* OPIE_ENABLE */
+diff -up fetchmail-6.3.26/fetchmail.h.orig fetchmail-6.3.26/fetchmail.h
+--- fetchmail-6.3.26/fetchmail.h.orig	2013-04-23 22:00:45.000000000 +0200
++++ fetchmail-6.3.26/fetchmail.h	2016-05-02 14:14:34.905139590 +0200
+@@ -771,9 +771,9 @@ int servport(const char *service);
+ int fm_getaddrinfo(const char *node, const char *serv, const struct addrinfo *hints, struct addrinfo **res);
+ void fm_freeaddrinfo(struct addrinfo *ai);
+ 
+-/* prototypes from tls.c */
+-int maybe_tls(struct query *ctl);
+-int must_tls(struct query *ctl);
++/* prototypes from starttls.c */
++int maybe_starttls(struct query *ctl);
++int must_starttls(struct query *ctl);
+ 
+ /* prototype from rfc822valid.c */
+ int rfc822_valid_msgid(const unsigned char *);
+diff -up fetchmail-6.3.26/fetchmail.man.orig fetchmail-6.3.26/fetchmail.man
+--- fetchmail-6.3.26/fetchmail.man.orig	2013-04-23 22:51:17.000000000 +0200
++++ fetchmail-6.3.26/fetchmail.man	2016-05-02 14:14:34.906139594 +0200
+@@ -412,23 +412,22 @@ from. The folder information is written
+ .B \-\-ssl
+ (Keyword: ssl)
+ .br
+-Causes the connection to the mail server to be encrypted
+-via SSL.  Connect to the server using the specified base protocol over a
+-connection secured by SSL. This option defeats opportunistic starttls
+-negotiation. It is highly recommended to use \-\-sslproto 'SSL3'
+-\-\-sslcertck to validate the certificates presented by the server and
+-defeat the obsolete SSLv2 negotiation. More information is available in
+-the \fIREADME.SSL\fP file that ships with fetchmail.
+-.IP
+-Note that fetchmail may still try to negotiate SSL through starttls even
+-if this option is omitted. You can use the \-\-sslproto option to defeat
+-this behavior or tell fetchmail to negotiate a particular SSL protocol.
++Causes the connection to the mail server to be encrypted via SSL, by
++negotiating SSL directly after connecting (SSL-wrapped mode).  It is
++highly recommended to use \-\-sslcertck to validate the certificates
++presented by the server.  Please see the description of \-\-sslproto
++below!  More information is available in the \fIREADME.SSL\fP file that
++ships with fetchmail.
++.IP
++Note that even if this option is omitted, fetchmail may still negotiate
++SSL in-band for POP3 or IMAP, through the STLS or STARTTLS feature.  You
++can use the \-\-sslproto option to modify that behavior.
+ .IP
+ If no port is specified, the connection is attempted to the well known
+ port of the SSL version of the base protocol.  This is generally a
+ different port than the port used by the base protocol.  For IMAP, this
+ is port 143 for the clear protocol and port 993 for the SSL secured
+-protocol, for POP3, it is port 110 for the clear text and port 995 for
++protocol; for POP3, it is port 110 for the clear text and port 995 for
+ the encrypted variant.
+ .IP
+ If your system lacks the corresponding entries from /etc/services, see
+@@ -470,39 +469,77 @@ cause some complications in daemon mode.
+ .IP
+ Also see \-\-sslcert above.
+ .TP
+-.B \-\-sslproto <name>
++.B \-\-sslproto <value>
+ (Keyword: sslproto)
+ .br
+-Forces an SSL/TLS protocol. Possible values are \fB''\fP,
+-\&'\fBSSL2\fP' (not supported on all systems),
+-\&'\fBSSL23\fP', (use of these two values is discouraged
+-and should only be used as a last resort) \&'\fBSSL3\fP', and
+-\&'\fBTLS1\fP'.  The default behaviour if this option is unset is: for
+-connections without \-\-ssl, use \&'\fBTLS1\fP' so that fetchmail will
+-opportunistically try STARTTLS negotiation with TLS1. You can configure
+-this option explicitly if the default handshake (TLS1 if \-\-ssl is not
+-used) does not work for your server.
+-.IP
+-Use this option with '\fBTLS1\fP' value to enforce a STARTTLS
+-connection. In this mode, it is highly recommended to also use
+-\-\-sslcertck (see below).  Note that this will then cause fetchmail
+-v6.3.19 to force STARTTLS negotiation even if it is not advertised by
+-the server.
+-.IP
+-To defeat opportunistic TLSv1 negotiation when the server advertises
+-STARTTLS or STLS, and use a cleartext connection use \fB''\fP.  This
+-option, even if the argument is the empty string, will also suppress the
+-diagnostic 'SERVER: opportunistic upgrade to TLS.' message in verbose
+-mode. The default is to try appropriate protocols depending on context.
++This option has a dual use, out of historic fetchmail behaviour. It
++controls both the SSL/TLS protocol version and, if \-\-ssl is not
++specified, the STARTTLS behaviour (upgrading the protocol to an SSL or
++TLS connection in-band). Some other options may however make TLS
++mandatory.
++.PP
++Only if this option and \-\-ssl are both missing for a poll, there will
++be opportunistic TLS for POP3 and IMAP, where fetchmail will attempt to
++upgrade to TLSv1 or newer.
++.PP
++Recognized values for \-\-sslproto are given below. You should normally
++chose one of the auto-negotiating options, i. e. '\fBauto\fP' or one of
++the options ending in a plus (\fB+\fP) character. Note that depending
++on OpenSSL library version and configuration, some options cause
++run-time errors because the requested SSL or TLS versions are not
++supported by the particular installed OpenSSL library.
++.RS
++.IP "\fB''\fP, the empty string"
++Disable STARTTLS. If \-\-ssl is given for the same server, log an error
++and pretend that '\fBauto\fP' had been used instead.
++.IP '\fBauto\fP'
++(default). Require TLS. Auto-negotiate TLSv1 or newer, disable SSLv3 downgrade.
++(previous releases of fetchmail have auto-negotiated all protocols that
++their OpenSSL library supported, including the broken SSLv3).
++.IP "\&'\fBSSL23\fP'
++see '\fBauto\fP'.
++.IP \&'\fBSSL2\fP'
++Require SSLv2 exactly. SSLv2 is broken, not supported on all systems, avoid it
++if possible. This will make fetchmail negotiate SSLv2 only, and is the
++only way to have fetchmail permit SSLv2.
++.IP \&'\fBSSL3\fP'
++Require SSLv3 exactly. SSLv3 is broken, not supported on all systems, avoid it
++if possible. This will make fetchmail negotiate SSLv3 only, and is the
++only way besides '\fBSSL3+\fP' to have fetchmail permit SSLv3.
++.IP \&'\fBSSL3+\fP'
++same as '\fBauto\fP', but permit SSLv3 as well. This is the only way
++besides '\fBSSL3\fP' to have fetchmail permit SSLv3.
++.IP \&'\fBTLS1\fP'
++Require TLSv1. This does not negotiate TLSv1.1 or newer, and is
++discouraged. Replace by TLS1+ unless the latter chokes your server.
++.IP \&'\fBTLS1+\fP'
++See '\fBauto\fP'.
++.IP \&'\fBTLS1.1\fP'
++Require TLS v1.1 exactly.
++.IP \&'\fBTLS1.1+\fP'
++Require TLS. Auto-negotiate TLSv1.1 or newer.
++.IP \&'\fBTLS1.2\fP'
++Require TLS v1.2 exactly.
++.IP '\fBTLS1.2+\fP'
++Require TLS. Auto-negotiate TLSv1.2 or newer.
++.IP "Unrecognized parameters"
++are treated the same as '\fBauto\fP'.
++.RE
++.IP
++NOTE: you should hardly ever need to use anything other than '' (to
++force an unencrypted connection) or 'auto' (to enforce TLS).
+ .TP
+ .B \-\-sslcertck
+ (Keyword: sslcertck)
+ .br
+-Causes fetchmail to strictly check the server certificate against a set of
+-local trusted certificates (see the \fBsslcertfile\fP and \fBsslcertpath\fP
+-options). If the server certificate cannot be obtained or is not signed by one
+-of the trusted ones (directly or indirectly), the SSL connection will fail,
+-regardless of the \fBsslfingerprint\fP option.
++Causes fetchmail to require that SSL/TLS be used and disconnect if it
++can not successfully negotiate SSL or TLS, or if it cannot successfully
++verify and validate the certificate and follow it to a trust anchor (or
++trusted root certificate). The trust anchors are given as a set of local
++trusted certificates (see the \fBsslcertfile\fP and \fBsslcertpath\fP
++options). If the server certificate cannot be obtained or is not signed
++by one of the trusted ones (directly or indirectly), fetchmail will
++disconnect, regardless of the \fBsslfingerprint\fP option.
+ .IP
+ Note that CRL (certificate revocation lists) are only supported in
+ OpenSSL 0.9.7 and newer! Your system clock should also be reasonably
+@@ -1202,31 +1239,33 @@ capability response. Specify a user opti
+ username and the part to the right as the NTLM domain.
+ 
+ .SS Secure Socket Layers (SSL) and Transport Layer Security (TLS)
++.PP All retrieval protocols can use SSL or TLS wrapping for the
++transport. Additionally, POP3 and IMAP retrival can also negotiate
++SSL/TLS by means of STARTTLS (or STLS).
+ .PP
+ Note that fetchmail currently uses the OpenSSL library, which is
+ severely underdocumented, so failures may occur just because the
+ programmers are not aware of OpenSSL's requirement of the day.
+ For instance, since v6.3.16, fetchmail calls
+ OpenSSL_add_all_algorithms(), which is necessary to support certificates
+-using SHA256 on OpenSSL 0.9.8 -- this information is deeply hidden in the
+-documentation and not at all obvious.  Please do not hesitate to report
+-subtle SSL failures.
+-.PP
+-You can access SSL encrypted services by specifying the \-\-ssl option.
+-You can also do this using the "ssl" user option in the .fetchmailrc
+-file. With SSL encryption enabled, queries are initiated over a
+-connection after negotiating an SSL session, and the connection fails if
+-SSL cannot be negotiated.  Some services, such as POP3 and IMAP, have
++using SHA256 on OpenSSL 0.9.8 -- this information is deeply hidden in
++the documentation and not at all obvious.  Please do not hesitate to
++report subtle SSL failures.
++.PP
++You can access SSL encrypted services by specifying the options starting
++with \-\-ssl, such as \-\-ssl, \-\-sslproto, \-\-sslcertck, and others.
++You can also do this using the corresponding user options in the .fetchmailrc
++file.  Some services, such as POP3 and IMAP, have
+ different well known ports defined for the SSL encrypted services.  The
+ encrypted ports will be selected automatically when SSL is enabled and
+-no explicit port is specified. The \-\-sslproto 'SSL3' option should be
+-used to select the SSLv3 protocol (default if unset: v2 or v3).  Also,
+-the \-\-sslcertck command line or sslcertck run control file option
+-should be used to force strict certificate checking - see below.
++no explicit port is specified.   Also, the \-\-sslcertck command line or
++sslcertck run control file option should be used to force strict
++certificate checking - see below.
+ .PP
+ If SSL is not configured, fetchmail will usually opportunistically try to use
+-STARTTLS. STARTTLS can be enforced by using \-\-sslproto "TLS1". TLS
+-connections use the same port as the unencrypted version of the
++STARTTLS. STARTTLS can be enforced by using \-\-sslproto\~auto and
++defeated by using \-\-sslproto\~''.
++TLS connections use the same port as the unencrypted version of the
+ protocol and negotiate TLS via special command. The \-\-sslcertck
+ command line or sslcertck run control file option should be used to
+ force strict certificate checking - see below.
+diff -up fetchmail-6.3.26/imap.c.orig fetchmail-6.3.26/imap.c
+--- fetchmail-6.3.26/imap.c.orig	2013-04-23 22:00:45.000000000 +0200
++++ fetchmail-6.3.26/imap.c	2016-05-02 14:14:34.906139594 +0200
+@@ -405,6 +405,8 @@ static int imap_getauth(int sock, struct
+ /* apply for connection authorization */
+ {
+     int ok = 0;
++    char *commonname;
++
+     (void)greeting;
+ 
+     /*
+@@ -429,25 +431,21 @@ static int imap_getauth(int sock, struct
+         return(PS_SUCCESS);
+     }
+ 
+-#ifdef SSL_ENABLE
+-    if (maybe_tls(ctl)) {
+-	char *commonname;
+-
+-	commonname = ctl->server.pollname;
+-	if (ctl->server.via)
+-	    commonname = ctl->server.via;
+-	if (ctl->sslcommonname)
+-	    commonname = ctl->sslcommonname;
++    commonname = ctl->server.pollname;
++    if (ctl->server.via)
++       commonname = ctl->server.via;
++    if (ctl->sslcommonname)
++       commonname = ctl->sslcommonname;
+ 
+-	if (strstr(capabilities, "STARTTLS")
+-		|| must_tls(ctl)) /* if TLS is mandatory, ignore capabilities */
++#ifdef SSL_ENABLE
++    if (maybe_starttls(ctl)) {
++       if ((strstr(capabilities, "STARTTLS") && maybe_starttls(ctl))
++               || must_starttls(ctl)) /* if TLS is mandatory, ignore capabilities */
+ 	{
+-	    /* Use "tls1" rather than ctl->sslproto because tls1 is the only
+-	     * protocol that will work with STARTTLS.  Don't need to worry
+-	     * whether TLS is mandatory or opportunistic unless SSLOpen() fails
+-	     * (see below). */
++	    /* Don't need to worry whether TLS is mandatory or
++	     * opportunistic unless SSLOpen() fails (see below). */
+ 	    if (gen_transact(sock, "STARTTLS") == PS_SUCCESS
+-		    && (set_timeout(mytimeout), SSLOpen(sock, ctl->sslcert, ctl->sslkey, "tls1", ctl->sslcertck,
++		    && (set_timeout(mytimeout), SSLOpen(sock, ctl->sslcert, ctl->sslkey, ctl->sslproto, ctl->sslcertck,
+ 			ctl->sslcertfile, ctl->sslcertpath, ctl->sslfingerprint, commonname,
+ 			ctl->server.pollname, &ctl->remotename)) != -1)
+ 	    {
+@@ -470,7 +468,7 @@ static int imap_getauth(int sock, struct
+ 		{
+ 		    report(stdout, GT_("%s: upgrade to TLS succeeded.\n"), commonname);
+ 		}
+-	    } else if (must_tls(ctl)) {
++	    } else if (must_starttls(ctl)) {
+ 		/* Config required TLS but we couldn't guarantee it, so we must
+ 		 * stop. */
+ 		set_timeout(0);
+@@ -492,6 +490,10 @@ static int imap_getauth(int sock, struct
+ 		/* Usable.  Proceed with authenticating insecurely. */
+ 	    }
+ 	}
++    } else {
++	if (strstr(capabilities, "STARTTLS") && outlevel >= O_VERBOSE) {
++	    report(stdout, GT_("%s: WARNING: server offered STARTTLS but sslproto '' given.\n"), commonname);
++	}
+     }
+ #endif /* SSL_ENABLE */
+ 
+diff -up fetchmail-6.3.26/Makefile.am.orig fetchmail-6.3.26/Makefile.am
+--- fetchmail-6.3.26/Makefile.am.orig	2013-04-23 22:00:45.000000000 +0200
++++ fetchmail-6.3.26/Makefile.am	2016-05-02 14:14:34.906139594 +0200
+@@ -31,7 +31,7 @@ libfm_a_SOURCES=	xmalloc.c base64.c rfc8
+ 			servport.c ntlm.h smbbyteorder.h smbdes.h smbmd4.h \
+ 			smbencrypt.h smbdes.c smbencrypt.c smbmd4.c smbutil.c \
+ 			libesmtp/gethostbyname.h libesmtp/gethostbyname.c \
+-			smbtypes.h fm_getaddrinfo.c tls.c rfc822valid.c \
++			smbtypes.h fm_getaddrinfo.c starttls.c rfc822valid.c \
+ 			xmalloc.h sdump.h sdump.c x509_name_match.c \
+ 			fm_strl.h md5c.c
+ if NTLM_ENABLE
+diff -up fetchmail-6.3.26/Makefile.in.orig fetchmail-6.3.26/Makefile.in
+--- fetchmail-6.3.26/Makefile.in.orig	2013-04-23 23:36:56.000000000 +0200
++++ fetchmail-6.3.26/Makefile.in	2016-05-02 14:14:34.906139594 +0200
+@@ -97,14 +97,14 @@ am__libfm_a_SOURCES_DIST = xmalloc.c bas
+ 	rfc2047e.c servport.c ntlm.h smbbyteorder.h smbdes.h smbmd4.h \
+ 	smbencrypt.h smbdes.c smbencrypt.c smbmd4.c smbutil.c \
+ 	libesmtp/gethostbyname.h libesmtp/gethostbyname.c smbtypes.h \
+-	fm_getaddrinfo.c tls.c rfc822valid.c xmalloc.h sdump.h sdump.c \
++	fm_getaddrinfo.c starttls.c rfc822valid.c xmalloc.h sdump.h sdump.c \
+ 	x509_name_match.c fm_strl.h md5c.c ntlmsubr.c
+ @NTLM_ENABLE_TRUE@am__objects_1 = ntlmsubr.$(OBJEXT)
+ am_libfm_a_OBJECTS = xmalloc.$(OBJEXT) base64.$(OBJEXT) \
+ 	rfc822.$(OBJEXT) report.$(OBJEXT) rfc2047e.$(OBJEXT) \
+ 	servport.$(OBJEXT) smbdes.$(OBJEXT) smbencrypt.$(OBJEXT) \
+ 	smbmd4.$(OBJEXT) smbutil.$(OBJEXT) gethostbyname.$(OBJEXT) \
+-	fm_getaddrinfo.$(OBJEXT) tls.$(OBJEXT) rfc822valid.$(OBJEXT) \
++	fm_getaddrinfo.$(OBJEXT) starttls.$(OBJEXT) rfc822valid.$(OBJEXT) \
+ 	sdump.$(OBJEXT) x509_name_match.$(OBJEXT) md5c.$(OBJEXT) \
+ 	$(am__objects_1)
+ libfm_a_OBJECTS = $(am_libfm_a_OBJECTS)
+@@ -483,7 +483,7 @@ libfm_a_SOURCES = xmalloc.c base64.c rfc
+ 	servport.c ntlm.h smbbyteorder.h smbdes.h smbmd4.h \
+ 	smbencrypt.h smbdes.c smbencrypt.c smbmd4.c smbutil.c \
+ 	libesmtp/gethostbyname.h libesmtp/gethostbyname.c smbtypes.h \
+-	fm_getaddrinfo.c tls.c rfc822valid.c xmalloc.h sdump.h sdump.c \
++	fm_getaddrinfo.c starttls.c rfc822valid.c xmalloc.h sdump.h sdump.c \
+ 	x509_name_match.c fm_strl.h md5c.c $(am__append_1)
+ libfm_a_LIBADD = $(EXTRAOBJ)
+ libfm_a_DEPENDENCIES = $(EXTRAOBJ)
+diff -up fetchmail-6.3.26/NEWS.orig fetchmail-6.3.26/NEWS
+--- fetchmail-6.3.26/NEWS.orig	2013-04-23 23:35:49.000000000 +0200
++++ fetchmail-6.3.26/NEWS	2016-05-02 14:14:34.907139597 +0200
+@@ -53,9 +53,33 @@ removed from a 6.4.0 or newer release.)
+   fetchmail may switch to a different SSL library.
+ * SSLv2 support will be removed from a future fetchmail release. It has been
+   obsolete for more than a decade.
+-
++* SSLv3 support may be removed from a future fetchmail release. It has been
++   obsolete for many years and found insecure. Use TLS.
+ --------------------------------------------------------------------------------
+ 
++## SECURITY FIXES THAT AFFECT BEHAVIOUR AND MAY WANT RECONFIGURATION
++* Fetchmail no longer attempts to negotiate SSLv3 by default,
++  even with --sslproto ssl23. Fetchmail can now use SSLv3, or TLSv1.1 or a newer
++  TLS version, with STLS/STARTTLS (it would previously force TLSv1.0).  If the
++  OpenSSL version used at build and run-time supports these versions, -sslproto
++  ssl3 can be used to enable this specific version.  Doing so is discouraged
++  because these protocols are broken.
++
++  Along the lines suggested - as patch - by Kurt Roeckx, Debian Bug #768843.
++
++  While this change is supposed to be compatible with common configurations,
++  users are advised to change all explicit --sslproto ssl2, --sslproto
++  ssl3, --sslproto tls1 to --sslproto auto, so that they can enable TLSv1.1 and
++  TLSv1.2 on systems with OpenSSL 1.0.1 or newer.
++
++  The --sslproto option now understands the values auto, tls1+, tls1.1+,
++  tls1.2+ (case insensitively).
++
++## CHANGES
++* Fetchmail now supports --sslproto auto and --sslproto tls1+ (same as ssl23).
++* --sslproto tls1.1+ and tls1.2+ are now supported for auto-negotiation with a
++  minimum specified TLS protocol version.
++
+ fetchmail-6.3.26 (released 2013-04-23, 26180 LoC):
+ 
+ # NOTE THAT FETCHMAIL IS NO LONGER PUBLISHED THROUGH IBIBLIO.
+@@ -75,6 +99,11 @@ fetchmail-6.3.26 (released 2013-04-23, 2
+ 
+   Fixes Launchpad Bug#1171818.
+ 
++* Fix SSL-enabled build on systems that do not declare SSLv3_client_method().
++  Related to Debian Bug#775255.
++* Version report lists -SSLv3 on +SSL builds that omit SSLv3_client_method().
++* Version report lists -SSLv2 on +SSL builds that omit SSLv2_client_method().
++
+ # KNOWN BUGS AND WORKAROUNDS
+   (This section floats upwards through the NEWS file so it stays with the
+   current release information)
+diff -up fetchmail-6.3.26/pop3.c.orig fetchmail-6.3.26/pop3.c
+--- fetchmail-6.3.26/pop3.c.orig	2013-04-23 22:00:45.000000000 +0200
++++ fetchmail-6.3.26/pop3.c	2016-05-02 14:14:34.907139597 +0200
+@@ -281,6 +281,7 @@ static int pop3_getauth(int sock, struct
+ #endif /* OPIE_ENABLE */
+ #ifdef SSL_ENABLE
+     flag connection_may_have_tls_errors = FALSE;
++    char *commonname;
+ #endif /* SSL_ENABLE */
+ 
+     done_capa = FALSE;
+@@ -393,7 +394,7 @@ static int pop3_getauth(int sock, struct
+ 		(ctl->server.authenticate == A_KERBEROS_V5) ||
+ 		(ctl->server.authenticate == A_OTP) ||
+ 		(ctl->server.authenticate == A_CRAM_MD5) ||
+-		maybe_tls(ctl))
++		maybe_starttls(ctl))
+ 	{
+ 	    if ((ok = capa_probe(sock)) != PS_SUCCESS)
+ 		/* we are in STAGE_GETAUTH => failure is PS_AUTHFAIL! */
+@@ -406,12 +407,12 @@ static int pop3_getauth(int sock, struct
+ 		    (ok == PS_SOCKET && !ctl->wehaveauthed))
+ 		{
+ #ifdef SSL_ENABLE
+-		    if (must_tls(ctl)) {
++		    if (must_starttls(ctl)) {
+ 			/* fail with mandatory STLS without repoll */
+ 			report(stderr, GT_("TLS is mandatory for this session, but server refused CAPA command.\n"));
+ 			report(stderr, GT_("The CAPA command is however necessary for TLS.\n"));
+ 			return ok;
+-		    } else if (maybe_tls(ctl)) {
++		    } else if (maybe_starttls(ctl)) {
+ 			/* defeat opportunistic STLS */
+ 			xfree(ctl->sslproto);
+ 			ctl->sslproto = xstrdup("");
+@@ -431,24 +432,19 @@ static int pop3_getauth(int sock, struct
+ 	}
+ 
+ #ifdef SSL_ENABLE
+-	if (maybe_tls(ctl)) {
+-	    char *commonname;
++	commonname = ctl->server.pollname;
++	if (ctl->server.via)
++	    commonname = ctl->server.via;
++	if (ctl->sslcommonname)
++	   commonname = ctl->sslcommonname;
+ 
+-	    commonname = ctl->server.pollname;
+-	    if (ctl->server.via)
+-		commonname = ctl->server.via;
+-	    if (ctl->sslcommonname)
+-		commonname = ctl->sslcommonname;
+-
+-	   if (has_stls
+-		   || must_tls(ctl)) /* if TLS is mandatory, ignore capabilities */
++	if (maybe_starttls(ctl)) {
++	   if (has_stls || must_starttls(ctl)) /* if TLS is mandatory, ignore capabilities */
+ 	   {
+-	       /* Use "tls1" rather than ctl->sslproto because tls1 is the only
+-		* protocol that will work with STARTTLS.  Don't need to worry
+-		* whether TLS is mandatory or opportunistic unless SSLOpen() fails
+-		* (see below). */
++	       /* Don't need to worry whether TLS is mandatory or
++	        * opportunistic unless SSLOpen() fails (see below). */
+ 	       if (gen_transact(sock, "STLS") == PS_SUCCESS
+-		       && (set_timeout(mytimeout), SSLOpen(sock, ctl->sslcert, ctl->sslkey, "tls1", ctl->sslcertck,
++		       && (set_timeout(mytimeout), SSLOpen(sock, ctl->sslcert, ctl->sslkey, ctl->sslproto, ctl->sslcertck,
+ 			   ctl->sslcertfile, ctl->sslcertpath, ctl->sslfingerprint, commonname,
+ 			   ctl->server.pollname, &ctl->remotename)) != -1)
+ 	       {
+@@ -475,7 +471,7 @@ static int pop3_getauth(int sock, struct
+ 		   {
+ 		       report(stdout, GT_("%s: upgrade to TLS succeeded.\n"), commonname);
+ 		   }
+-	       } else if (must_tls(ctl)) {
++	       } else if (must_starttls(ctl)) {
+ 		   /* Config required TLS but we couldn't guarantee it, so we must
+ 		    * stop. */
+ 		   set_timeout(0);
+@@ -495,7 +491,11 @@ static int pop3_getauth(int sock, struct
+ 		   }
+ 	       }
+ 	   }
+-	} /* maybe_tls() */
++	} else { /* maybe_starttls() */
++	    if (has_stls && outlevel >= O_VERBOSE) {
++	        report(stdout, GT_("%s: WARNING: server offered STLS, but sslproto '' given.\n"), commonname);
++	    }
++	} /* maybe_starttls() */
+ #endif /* SSL_ENABLE */
+ 
+ 	/*
+diff -up fetchmail-6.3.26/README.SSL.orig fetchmail-6.3.26/README.SSL
+--- fetchmail-6.3.26/README.SSL.orig	2013-01-02 23:38:24.000000000 +0100
++++ fetchmail-6.3.26/README.SSL	2016-05-02 14:14:34.907139597 +0200
+@@ -11,36 +11,48 @@ specific to fetchmail.
+ In case of troubles, mail the README.SSL-SERVER file to your ISP and 
+ have them check their server configuration against it.
+ 
+-Unfortunately, fetchmail confuses SSL/TLS protocol levels with whether 
+-a service needs to use in-band negotiation (STLS/STARTTLS for POP3/IMAP4) or is 
+-totally SSL-wrapped on a separate port.  For compatibility reasons, this cannot 
+-be fixed in a bugfix release.
++Unfortunately, fetchmail confuses SSL/TLS protocol levels with whether a
++service needs to use in-band negotiation (STLS/STARTTLS for POP3/IMAP4)
++or is totally SSL-wrapped on a separate port.  For compatibility
++reasons, this cannot be fixed in a bugfix or minor release.
+ 
+ 	-- Matthias Andree, 2009-05-09
+ 
++Also, fetchmail 6.4.0 and newer releases (this is also true for this release,
++as the changes were backported from upstream - noted by Red Hat) changed
++some of the semantics as the result of a bug-fix, and will auto-negotiate
++TLSv1 or newer only. If your server does not support this, you may have
++to specify --sslproto ssl3.  This is in order to prefer the newer TLS
++protocols, because SSLv2 and v3 are broken.
++
++       -- Matthias Andree, 2015-01-16
++
+ 
+ Quickstart
+ ----------
+ 
++Use an up-to-date release of OpenSSL 1.0.1 or newer, so as to get
++TLSv1.2 support.
++
+ For use of SSL or TLS with in-band negotiation on the regular service's port, 
+ i. e. with STLS or STARTTLS, use these command line options
+ 
+-    --sslproto tls1 --sslcertck
++    --sslproto auto --sslcertck
+ 
+ or these options in the rcfile (after the respective "user"... options)
+ 
+-      sslproto tls1   sslcertck
++      sslproto auto   sslcertck
+ 
+ 
+ For use of SSL or TLS on a separate port, if the whole TCP connection is 
+-SSL-encrypted from the very beginning, use these command line options (in the 
+-rcfile, omit all leading "--"):
++SSL-encrypted from the very beginning (SSL- or TLS-wrapped), use these
++command line options (in the rcfile, omit all leading "--"):
+ 
+-    --ssl --sslproto ssl3 --sslcertck
++    --ssl --sslproto auto --sslcertck
+ 
+ or these options in the rcfile (after the respective "user"... options)
+ 
+-      ssl   sslproto ssl3   sslcertck
++      ssl   sslproto auto   sslcertck
+ 
+ 
+ Background and use (long version :-))
+diff -up fetchmail-6.3.26/socket.c.orig fetchmail-6.3.26/socket.c
+--- fetchmail-6.3.26/socket.c.orig	2013-04-23 22:00:45.000000000 +0200
++++ fetchmail-6.3.26/socket.c	2016-05-02 14:16:27.711570350 +0200
+@@ -876,6 +876,9 @@ int SSLOpen(int sock, char *mycert, char
+ {
+         struct stat randstat;
+         int i;
++	/* disable SSLv2 and SSLv3 by default. SSLv2 can be enabled with '--sslproto ssl2'.
++	   SSLv3 can be enabled with '--sslproto ssl3' or '--sslproto ssl3+' */
++        int avoid_ssl_versions = SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3;
+ 	long sslopts = SSL_OP_ALL;
+ 
+ 	SSL_load_error_strings();
+@@ -910,21 +913,61 @@ int SSLOpen(int sock, char *mycert, char
+ #if HAVE_DECL_SSLV2_CLIENT_METHOD + 0 > 0
+ 			_ctx[sock] = SSL_CTX_new(SSLv2_client_method());
+ #else
+-			report(stderr, GT_("Your operating system does not support SSLv2.\n"));
++			report(stderr, GT_("Your OpenSSL version does not support SSLv2.\n"));
+ 			return -1;
+ #endif
++			avoid_ssl_versions &= ~SSL_OP_NO_SSLv2;
+ 		} else if(!strcasecmp("ssl3",myproto)) {
++#if HAVE_DECL_SSLV3_CLIENT_METHOD + 0 > 0
+ 			_ctx[sock] = SSL_CTX_new(SSLv3_client_method());
++#else
++			report(stderr, GT_("Your OpenSSL version does not support SSLv3.\n"));
++			return -1;
++#endif
++			avoid_ssl_versions &= ~SSL_OP_NO_SSLv3;
++		} else if(!strcasecmp("ssl3+",myproto)) {
++			avoid_ssl_versions &= ~SSL_OP_NO_SSLv3;
++			myproto = NULL;
+ 		} else if(!strcasecmp("tls1",myproto)) {
+ 			_ctx[sock] = SSL_CTX_new(TLSv1_client_method());
+-		} else if (!strcasecmp("ssl23",myproto)) {
++		} else if(!strcasecmp("tls1+",myproto)) {
++			myproto = NULL;
++#if defined(TLS1_1_VERSION) && TLS_MAX_VERSION >= TLS1_1_VERSION
++		} else if(!strcasecmp("tls1.1",myproto)) {
++			_ctx[sock] = SSL_CTX_new(TLSv1_1_client_method());
++		} else if(!strcasecmp("tls1.1+",myproto)) {
++			myproto = NULL;
++			avoid_ssl_versions |= SSL_OP_NO_TLSv1;
++#else
++		} else if(!strcasecmp("tls1.1",myproto) || !strcasecmp("tls1.1+", myproto)) {
++			report(stderr, GT_("Your OpenSSL version does not support TLS v1.1.\n"));
++			return -1;
++#endif
++#if defined(TLS1_2_VERSION) && TLS_MAX_VERSION >= TLS1_2_VERSION
++		} else if(!strcasecmp("tls1.2",myproto)) {
++			_ctx[sock] = SSL_CTX_new(TLSv1_2_client_method());
++		} else if(!strcasecmp("tls1.2+",myproto)) {
++			myproto = NULL;
++			avoid_ssl_versions |= SSL_OP_NO_TLSv1;
++			avoid_ssl_versions |= SSL_OP_NO_TLSv1_1;
++#else
++		} else if(!strcasecmp("tls1.2",myproto) || !strcasecmp("tls1.2+", myproto)) {
++			report(stderr, GT_("Your OpenSSL version does not support TLS v1.2.\n"));
++			return -1;
++#endif
++		} else if (!strcasecmp("ssl23",myproto) || 0 == strcasecmp("auto",myproto)) {
+ 			myproto = NULL;
+ 		} else {
+-			report(stderr,GT_("Invalid SSL protocol '%s' specified, using default (SSLv23).\n"), myproto);
++			report(stderr,GT_("Invalid SSL protocol '%s' specified, using default autoselect (SSL23).\n"), myproto);
+ 			myproto = NULL;
+ 		}
+ 	}
++        // do not combine into an else { } as myproto may be nulled
++        // above!
+ 	if(!myproto) {
++		// SSLv23 is a misnomer and will in fact use the best
++		// available protocol, subject to SSL_OP_NO*
++		// constraints.
+ 		_ctx[sock] = SSL_CTX_new(SSLv23_client_method());
+ 	}
+ 	if(_ctx[sock] == NULL) {
+@@ -938,7 +981,7 @@ int SSLOpen(int sock, char *mycert, char
+ 		sslopts &= ~ SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS;
+ 	}
+ 
+-	SSL_CTX_set_options(_ctx[sock], sslopts);
++	SSL_CTX_set_options(_ctx[sock], sslopts | avoid_ssl_versions);
+ 
+ 	if (certck) {
+ 		SSL_CTX_set_verify(_ctx[sock], SSL_VERIFY_PEER, SSL_ck_verify_callback);
+@@ -1017,6 +1060,24 @@ int SSLOpen(int sock, char *mycert, char
+ 		return(-1);
+ 	}
+ 
++	if (outlevel >= O_VERBOSE) {
++	    SSL_CIPHER const *sc;
++	    int bitsmax, bitsused;
++
++	    const char *ver;
++
++	    ver = SSL_get_version(_ssl_context[sock]);
++
++	    sc = SSL_get_current_cipher(_ssl_context[sock]);
++	    if (!sc) {
++		report (stderr, GT_("Cannot obtain current SSL/TLS cipher - no session established?\n"));
++	    } else {
++		bitsused = SSL_CIPHER_get_bits(sc, &bitsmax);
++		report(stdout, GT_("SSL/TLS: using protocol %s, cipher %s, %d/%d secret/processed bits\n"),
++		    ver, SSL_CIPHER_get_name(sc), bitsused, bitsmax);
++		}
++	}
++
+ 	/* Paranoia: was the callback not called as we expected? */
+ 	if (!_depth0ck) {
+ 		report(stderr, GT_("Certificate/fingerprint verification was somehow skipped!\n"));
+diff -up fetchmail-6.3.26/starttls.c.orig fetchmail-6.3.26/starttls.c
+--- fetchmail-6.3.26/starttls.c.orig	2016-05-02 14:14:34.908139601 +0200
++++ fetchmail-6.3.26/starttls.c	2016-05-02 14:14:34.908139601 +0200
+@@ -0,0 +1,37 @@
++/** \file tls.c - collect common TLS functionality
++ * \author Matthias Andree
++ * \date 2006
++ */
++
++#include "fetchmail.h"
++
++#include <string.h>
++
++#ifdef HAVE_STRINGS_H
++#include <strings.h>
++#endif
++
++/** return true if user allowed opportunistic STARTTLS/STLS */
++int maybe_starttls(struct query *ctl) {
++#ifdef SSL_ENABLE
++         /* opportunistic  or forced TLS */
++    return (!ctl->sslproto || strlen(ctl->sslproto))
++	&& !ctl->use_ssl;
++#else
++    (void)ctl;
++    return 0;
++#endif
++}
++
++/** return true if user requires STARTTLS/STLS, note though that this
++ * code must always use a logical AND with maybe_tls(). */
++int must_starttls(struct query *ctl) {
++#ifdef SSL_ENABLE
++    return maybe_starttls(ctl)
++	&& (ctl->sslfingerprint || ctl->sslcertck
++		|| (ctl->sslproto && !strcasecmp(ctl->sslproto, "tls1")));
++#else
++    (void)ctl;
++    return 0;
++#endif
++}
+diff -up fetchmail-6.3.26/tls.c.orig fetchmail-6.3.26/tls.c
+--- fetchmail-6.3.26/tls.c.orig	2013-04-23 22:00:45.000000000 +0200
++++ fetchmail-6.3.26/tls.c	2016-05-02 14:14:34.908139601 +0200
+@@ -1,35 +0,0 @@
+-/** \file tls.c - collect common TLS functionality 
+- * \author Matthias Andree
+- * \date 2006
+- */
+-
+-#include "fetchmail.h"
+-
+-#ifdef HAVE_STRINGS_H
+-#include <strings.h>
+-#endif
+-
+-/** return true if user allowed TLS */
+-int maybe_tls(struct query *ctl) {
+-#ifdef SSL_ENABLE
+-         /* opportunistic  or forced TLS */
+-    return (!ctl->sslproto || !strcasecmp(ctl->sslproto,"tls1"))
+-	&& !ctl->use_ssl;
+-#else
+-    (void)ctl;
+-    return 0;
+-#endif
+-}
+-
+-/** return true if user requires TLS, note though that this code must
+- * always use a logical AND with maybe_tls(). */
+-int must_tls(struct query *ctl) {
+-#ifdef SSL_ENABLE
+-    return maybe_tls(ctl)
+-	&& (ctl->sslfingerprint || ctl->sslcertck
+-		|| (ctl->sslproto && !strcasecmp(ctl->sslproto, "tls1")));
+-#else
+-    (void)ctl;
+-    return 0;
+-#endif
+-}

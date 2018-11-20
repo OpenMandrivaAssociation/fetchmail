@@ -1,6 +1,3 @@
-removed_sources:
-  fetchmail-6.3.22.tar.xz: 3bb755010dbe568d53840e22d8e87d8d5db25b19
 sources:
   fetchmail-6.3.26.tar.xz: de8dbe62a8edfa232ee4278257a1fe67aa1c797a
   fetchmail-6.3.26.tar.xz.asc: 62d9039e08a15a2fa8f54bcd9483e373d135b61a
-  fetchmail.gif: fb82ea6b2e59c6119ef63cea734d88829654939d

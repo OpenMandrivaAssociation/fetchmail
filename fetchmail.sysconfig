@@ -1,7 +1,0 @@
-# Customized settings for fetchmail
-
-# Define nice level for fetchmail
-SERVICE_RUN_NICE_LEVEL="+5"
-
-# Define polling interval in seconds
-FETCHMAIL_POLL=180

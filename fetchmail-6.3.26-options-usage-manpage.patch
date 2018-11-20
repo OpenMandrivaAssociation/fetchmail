@@ -1,0 +1,94 @@
+diff -up fetchmail-6.3.26/fetchmail.man.orig fetchmail-6.3.26/fetchmail.man
+--- fetchmail-6.3.26/fetchmail.man.orig	2016-04-27 13:18:17.911459399 +0200
++++ fetchmail-6.3.26/fetchmail.man	2016-04-27 13:29:35.300958501 +0200
+@@ -164,6 +164,9 @@ Some special options are not covered her
+ in sections on AUTHENTICATION and DAEMON MODE which follow.
+ .SS General Options
+ .TP
++.B \-? | \-\-help
++Displays option help.
++.TP
+ .B \-V | \-\-version
+ Displays the version information for your copy of \fBfetchmail\fP.  No mail
+ fetch is performed.  Instead, for each server specified, all the option
+@@ -1061,7 +1064,7 @@ sent to 'username\&@\&userhost.userdom.d
+ \fIDelivered\-To:\fR line of the form:
+ .IP
+ Delivered\-To: mbox\-userstr\-username\&@\&userhost.example.com
+-.PP
++.IP
+ The ISP can make the 'mbox\-userstr\-' prefix anything they choose
+ but a string matching the user host name is likely.
+ By using the option 'envelope Delivered\-To:' you can make fetchmail reliably
+@@ -1075,6 +1078,10 @@ specified, and dump a configuration repo
+ configuration report is a data structure assignment in the language
+ Python.  This option is meant to be used with an interactive
+ \fI~/.fetchmailrc\fP editor like \fBfetchmailconf\fP, written in Python.
++.TP
++.B \-y | \-\-yydebug
++Enables parser debugging, this option is meant to be used by developers
++only.
+ 
+ .SS Removed Options
+ .TP
+@@ -1360,6 +1367,8 @@ authentication or multiple timeouts.
+ .SS Terminating the background daemon
+ .PP
+ The option
++.B \-q
++or
+ .B \-\-quit
+ will kill a running daemon process instead of waking it up (if there
+ is no such process, \fBfetchmail\fP will notify you).
+@@ -1916,7 +1925,7 @@ T}
+ mda     	\-m	\&	T{
+ Specify MDA for local delivery
+ T}
+-bsmtp   	\-o	\&	T{
++bsmtp   	\&	\&	T{
+ Specify BSMTP batch file to append to
+ T}
+ preconnect	\&	\&	T{
+diff -up fetchmail-6.3.26/options.c.orig fetchmail-6.3.26/options.c
+--- fetchmail-6.3.26/options.c.orig	2016-04-27 13:00:59.001360077 +0200
++++ fetchmail-6.3.26/options.c	2016-04-27 13:17:48.325350247 +0200
+@@ -58,9 +58,9 @@ enum {
+     LA_BADHEADER
+ };
+ 
+-/* options still left: CgGhHjJoORTWxXYz */
++/* options still left: ACgGhHjJoORTWxXYz */
+ static const char *shortoptions = 
+-	"?Vcsvd:NqL:f:i:p:UP:A:t:E:Q:u:akKFnl:r:S:Z:b:B:e:m:I:M:yw:D:";
++	"?Vcsvd:NqL:f:i:p:UP:t:E:Q:u:akKFnl:r:S:Z:b:B:e:m:I:M:yw:D:";
+ 
+ static const struct option longoptions[] = {
+ /* this can be const because all flag fields are 0 and will never get set */
+@@ -630,6 +630,7 @@ int parsecmdline (int argc /** argument
+ 	P(GT_("  -q, --quit        kill daemon process\n"));
+ 	P(GT_("  -L, --logfile     specify logfile name\n"));
+ 	P(GT_("      --syslog      use syslog(3) for most messages when running as a daemon\n"));
++	P(GT_("      --nosyslog    turns off use of syslog(3)\n"));
+ 	P(GT_("      --invisible   don't write Received & enable host spoofing\n"));
+ 	P(GT_("  -f, --fetchmailrc specify alternate run control file\n"));
+ 	P(GT_("  -i, --idfile      specify alternate UIDs file\n"));
+@@ -658,8 +659,9 @@ int parsecmdline (int argc /** argument
+ 	P(GT_("      --bad-header {reject|accept}\n"
+ 	      "                    specify policy for handling messages with bad headers\n"));
+ 
+-	P(GT_("  -p, --protocol    specify retrieval protocol (see man page)\n"));
++	P(GT_("  -p, --proto[col]  specify retrieval protocol (see man page)\n"));
+ 	P(GT_("  -U, --uidl        force the use of UIDLs (pop3 only)\n"));
++	P(GT_("      --idle        tells the IMAP server to send notice of new messages\n"));
+ 	P(GT_("      --port        TCP port to connect to (obsolete, use --service)\n"));
+ 	P(GT_("  -P, --service     TCP service to connect to (can be numeric TCP port)\n"));
+ 	P(GT_("      --auth        authentication type (password/kerberos/ssh/otp)\n"));
+@@ -669,7 +671,7 @@ int parsecmdline (int argc /** argument
+ 	P(GT_("      --principal   mail service principal\n"));
+ 	P(GT_("      --tracepolls  add poll-tracing information to Received header\n"));
+ 
+-	P(GT_("  -u, --username    specify users's login on server\n"));
++	P(GT_("  -u, --user[name]  specify users's login on server\n"));
+ 	P(GT_("  -a, --[fetch]all  retrieve old and new messages\n"));
+ 	P(GT_("  -K, --nokeep      delete new messages after retrieval\n"));
+ 	P(GT_("  -k, --keep        save new messages after retrieval\n"));

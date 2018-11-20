@@ -1,0 +1,36 @@
+diff -up fetchmail-6.3.24/config.h.in.orig fetchmail-6.3.24/config.h.in
+--- fetchmail-6.3.24/config.h.in.orig	2017-06-13 10:14:37.783983820 +0200
++++ fetchmail-6.3.24/config.h.in	2017-06-13 10:15:38.532996937 +0200
+@@ -53,6 +53,10 @@
+    if you don't. */
+ #undef HAVE_DECL_SSLV2_CLIENT_METHOD
+ 
++/* Define to 1 if you have the declaration of `SSLv3_client_method', and to 0
++   if you don't. */
++#undef HAVE_DECL_SSLV3_CLIENT_METHOD
++
+ /* Define to 1 if you have the declaration of `strerror', and to 0 if you
+    don't. */
+ #undef HAVE_DECL_STRERROR
+diff -up fetchmail-6.3.24/configure.orig fetchmail-6.3.24/configure
+--- fetchmail-6.3.24/configure.orig	2017-06-13 10:23:06.824111065 +0200
++++ fetchmail-6.3.24/configure	2017-06-13 10:23:43.308129006 +0200
+@@ -10133,6 +10133,18 @@ cat >>confdefs.h <<_ACEOF
+ #define HAVE_DECL_SSLV2_CLIENT_METHOD $ac_have_decl
+ _ACEOF
+ 
++	ac_fn_c_check_decl "$LINENO" "SSLv3_client_method" "ac_cv_have_decl_SSLv3_client_method" "#include <openssl/ssl.h>
++"
++if test "x$ac_cv_have_decl_SSLv3_client_method" = xyes; then :
++  ac_have_decl=1
++else
++  ac_have_decl=0
++fi
++
++cat >>confdefs.h <<_ACEOF
++#define HAVE_DECL_SSLV3_CLIENT_METHOD $ac_have_decl
++_ACEOF
++
+ 	;;
+ esac
+ 
