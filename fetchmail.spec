@@ -67,4 +67,5 @@ rm -f $RPM_BUILD_ROOT%{_mandir}/man1/fetchmailconf.1*
 %{_bindir}/fetchmail
 %{_mandir}/man1/fetchmail.1*
 %{_unitdir}/fetchmail.service
+%{python_sitelib}/fetchmailconf.py
 %config(noreplace) %attr(0600, mail, mail) %{_sysconfdir}/fetchmailrc.example
