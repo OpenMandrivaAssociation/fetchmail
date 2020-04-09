@@ -12,7 +12,7 @@ Source3: fetchmailrc.example
 #Patch0: fetchmail-6.3.26-ssl-backport.patch
 # Minor fixes of inacurracies in options, usage message and man page (accepted upstream)
 #Patch1: fetchmail-6.3.26-options-usage-manpage.patch
-Patch2: fetchmail-6.3.24-sslv3-in-ssllib-check.patch
+#Patch2: fetchmail-6.3.24-sslv3-in-ssllib-check.patch
 # Set SNI, see bz#1611815 (backported from upstream)
 Patch3: fetchmail-6.3.26-ssl-set-sni.patch
 URL: http://www.fetchmail.info/
@@ -36,7 +36,7 @@ connections.
 %setup -q
 #patch0 -p1 -b .ssl-backport
 #patch1 -p1 -b .options-usage-manpage
-%patch2 -p1 -b .sslv3-in-ssllib-check
+#patch2 -p1 -b .sslv3-in-ssllib-check
 %patch3 -p1 -b .ssl-set-sni
 
 %build
