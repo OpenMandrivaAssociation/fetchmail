@@ -14,7 +14,7 @@ Source3: fetchmailrc.example
 #Patch1: fetchmail-6.3.26-options-usage-manpage.patch
 #Patch2: fetchmail-6.3.24-sslv3-in-ssllib-check.patch
 # Set SNI, see bz#1611815 (backported from upstream)
-Patch3: fetchmail-6.3.26-ssl-set-sni.patch
+#Patch3: fetchmail-6.3.26-ssl-set-sni.patch
 URL: http://www.fetchmail.info/
 # For a breakdown of the licensing, see COPYING
 License: GPL+ and Public Domain
@@ -37,7 +37,7 @@ connections.
 #patch0 -p1 -b .ssl-backport
 #patch1 -p1 -b .options-usage-manpage
 #patch2 -p1 -b .sslv3-in-ssllib-check
-%patch3 -p1 -b .ssl-set-sni
+#patch3 -p1 -b .ssl-set-sni
 
 %build
 %configure --enable-POP3 --enable-IMAP --with-ssl --without-hesiod \
