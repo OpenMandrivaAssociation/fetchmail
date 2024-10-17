@@ -9,7 +9,7 @@ Source2: fetchmail.service
 # example configuration file
 Source3: fetchmailrc.example
 
-URL: http://www.fetchmail.info/
+URL: https://www.fetchmail.info/
 # For a breakdown of the licensing, see COPYING
 License: GPL+ and Public Domain
 BuildRequires: gettext-devel 
