@@ -12,6 +12,11 @@ Source3: fetchmailrc.example
 URL: https://www.fetchmail.info/
 # For a breakdown of the licensing, see COPYING
 License: GPL+ and Public Domain
+BuildRequires:	autoconf
+BuildRequires:	automake
+BuildRequires:	libtool-base
+BuildRequires:	slibtool
+BuildRequires:	make
 BuildRequires: gettext-devel 
 BuildRequires: krb5-devel 
 BuildRequires: pkgconfig(openssl)
