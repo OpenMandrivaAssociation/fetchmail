@@ -1,2 +1,3 @@
 sources:
-  fetchmail-6.6.6.tar.xz: e99abe243b47634978274ac8c7005df2bfe17971
+  fetchmail-6.6.8.tar.xz: 9f3bef8a31342a2a62ff8e3f587ffdefb9315174
+  fetchmail-6.6.8.tar.xz.asc: 752bf693adb2d2da38411b8e3f048b0389f9059f
