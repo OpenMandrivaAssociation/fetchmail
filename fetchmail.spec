@@ -1,6 +1,6 @@
 Summary: A remote mail retrieval and forwarding utility
 Name: fetchmail
-Version:	6.6.8
+Version:	6.6.9
 Release:	1
 Source0: https://downloads.sourceforge.net/project/fetchmail/branch_6.6/%{name}-%{version}.tar.xz
 Source1: https://downloads.sourceforge.net/project/fetchmail/branch_6.6/%{name}-%{version}.tar.xz.asc
@@ -10,12 +10,11 @@ Source2: fetchmail.service
 Source3: fetchmailrc.example
 
 URL: https://www.fetchmail.info/
+Group: Networking/Mail
 # For a breakdown of the licensing, see COPYING
 License: GPL+ and Public Domain
 BuildRequires:	autoconf
 BuildRequires:	automake
-BuildRequires:	libtool-base
-BuildRequires:	slibtool
 BuildRequires:	make
 BuildRequires: gettext-devel 
 BuildRequires: krb5-devel 
