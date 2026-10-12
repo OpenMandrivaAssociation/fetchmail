@@ -1,7 +1,7 @@
 Summary: A remote mail retrieval and forwarding utility
 Name: fetchmail
 Version:	6.6.9
-Release:	1
+Release:	2
 Source0: https://downloads.sourceforge.net/project/fetchmail/branch_6.6/%{name}-%{version}.tar.xz
 Source1: https://downloads.sourceforge.net/project/fetchmail/branch_6.6/%{name}-%{version}.tar.xz.asc
 # systemd service file
